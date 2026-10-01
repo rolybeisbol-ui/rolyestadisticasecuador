@@ -1,0 +1,11 @@
+/* 09-auth.js · inicio de sesión del administrador (la verificación real ocurre en netlify/functions/auth.js) */
+const AUTH='/.netlify/functions/auth';window.ADM=false;
+function loginUI(msg=''){$('#m').innerHTML=`<div><h2 style="margin-top:0">Acceso administrador</h2><form id="lf" style="display:flex;flex-direction:column;gap:10px"><input type="text" id="lu" placeholder="Usuario" autocomplete="username"><input type="password" id="lp" placeholder="Contraseña" autocomplete="current-password"><div style="color:#d33;min-height:18px">${msg}</div><div class="row"><button class="btn" type="submit">Entrar</button><button class="btn s" type="button" data-x="1">Cancelar</button></div></form></div>`;$('#m').classList.add('on');$('#lu').focus()}
+async function enterAdmin(go){const r=await fetch(AUTH+'?a=asset',{credentials:'same-origin'});if(!r.ok)throw'Sesión no válida';const s=document.createElement('script');s.textContent=await r.text();document.head.appendChild(s);window.ADM=true;if(!TABS.some(t=>t[0]=='adm'))TABS.push(['adm','Admin']);$('#acc').textContent='Cerrar sesión';if(go)view='adm';draw()}
+async function checkSession(){try{const r=await fetch(AUTH+'?a=me',{credentials:'same-origin'});if(r.ok&&(await r.json()).admin)await enterAdmin(false)}catch(e){}}
+document.addEventListener('submit',async e=>{if(e.target.id!='lf')return;e.preventDefault();const u=$('#lu').value,p=$('#lp').value;
+ try{const r=await fetch(AUTH+'?a=login',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({u,p})});
+  if(!r.ok){let m=[404,405,501].includes(r.status)?'El servicio de acceso no está publicado en este sitio (la función de Netlify no se desplegó). Revisa el paso 3 del README.':'No se pudo iniciar sesión (código '+r.status+')';try{m=(await r.json()).error||m}catch(x){}return loginUI(m)}
+  $('#m').classList.remove('on');await enterAdmin(true)}catch(x){loginUI('No se pudo conectar con el servicio de acceso. Usa el sitio publicado en Netlify, o en tu PC: node tools/dev-server.js')}});
+document.addEventListener('click',async e=>{if(!e.target.closest('#acc'))return;
+ if(window.ADM){await fetch(AUTH+'?a=logout',{method:'POST',credentials:'same-origin'});location.reload()}else loginUI()});
